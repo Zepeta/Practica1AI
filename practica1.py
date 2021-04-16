@@ -12,7 +12,10 @@ ax1 = fig.add_subplot()
 root = tk.Tk()
 root.title("Práctica 1")
 
-
+columna = 0
+fila = 0
+mapeo = []
+bandera_ep = False
 
 def definirMapa():
     f = open("doc.txt","r")
@@ -20,6 +23,8 @@ def definirMapa():
     lista = []
     col = 0
     row = 0
+    global mapeo
+    global bandera_ep
     for car in matriz:
         if car != ",":
             col += 1
@@ -32,12 +37,16 @@ def definirMapa():
         if car != "," and car != "\n":
             lista.append(int(car))
     mapa = np.array(lista).reshape(row,col)
+    if not bandera_ep:
+        mapeo = np.full((row,col),2)
+        im = ax1.imshow(mapeo,cmap = ListedColormap(['k']), extent = [1,col+1,row+1,1])#'gray','w'
+    else:
+        im = ax1.imshow(mapeo,cmap = ListedColormap(['gray',"w","k"]), extent = [1,col+1,row+1,1])#'gray','w'
+    im.set_data(mapeo)
     ax1.xaxis.set_ticks_position('top')
     ax1.set_xticks(np.arange(1,col+1))
     ax1.set_yticks(np.arange(1,row+1))
-    ax1.imshow(mapa,cmap = ListedColormap(['gray','w']), extent = [1,col+1,row+1,1])
-    plt.text(1.2,10.7,"I")
-    plt.text(1.5,10.7,"V")
+    
     return mapa
 
 def animate(i):
@@ -57,28 +66,29 @@ def muestraMapa():
     
     ani = animation.FuncAnimation(fig, animate, interval=1000,cache_frame_data=False) 
 
-    btn_MC = tk.Button(root_panel,
+    btn_mc = tk.Button(root, #root_panel
                      text = "Mostrar valor de Casilla",
                      command= lambda: mostrarCasilla(definirMapa()))    
-    btn_MC.pack(padx=5, pady=10, side=tk.LEFT)
+    btn_mc.pack(padx=5, pady=10, side=tk.LEFT)
 
-    btn_CC = tk.Button(root_panel,
+    btn_cc = tk.Button(root, #root_panel
                      text = "Cambiar valor de Casilla",
                      command= lambda: cambiarCasilla(definirMapa()))       
-    btn_CC.pack(padx=5, pady=10, side=tk.LEFT)
+    btn_cc.pack(padx=5, pady=10, side=tk.LEFT)
     
     root.bind("<Key>",eventoClick)
     
+    global columna, fila
+    columna, fila = establecerPosiciones()
     
     root.mainloop() 
     
-columna = 0
-fila = 9
+
 def eventoClick(event):
     global columna
     global fila
     mapa = definirMapa()    
-    print(columna+1,fila+1)
+    
     posicion_inicial = mapa[fila,columna]
     posicion_actual = posicion_inicial
     siguiente_posicion = []
@@ -117,14 +127,42 @@ def eventoClick(event):
     elif event.keysym == "Escape":
         root.destroy()
         sys.exit()
+    print(columna+1,fila+1)
+    mapear(fila+1, columna+1)
 
+def establecerPosiciones():
+    mapa = definirMapa()
+    global mapeo
+    global bandera_ep
+    valorColInic = simpledialog.askinteger("Columna","Ingrese el valor de la columna inicial", parent=root) 
+    valorFilaInic = simpledialog.askinteger("Fila","Ingrese el valor de la fila inicial",parent=root) 
+    valorColFin = simpledialog.askinteger("Columna","Ingrese el valor de la columna final", parent=root) 
+    valorFilaFin = simpledialog.askinteger("Fila","Ingrese el valor de la fila final",parent=root)  
+    plt.text(float(valorColInic)+.2,float(valorFilaInic)+.7,"I")
+    plt.text(float(valorColInic)+.3,float(valorFilaInic)+.7,"V")
+    
+    plt.text(float(valorColFin)+.3,float(valorFilaFin)+.7,"F")
+    mapear(valorFilaInic,valorColInic)
+    bandera_ep = True
+    return valorColInic-1, valorFilaInic-1
 
-def calcularPosicion():
-    mapa = definirMapa()    
-    posicion_inicial = mapa[9,0]
-    
-    
-    
+def mapear(fila, columna):
+    mapa = definirMapa()
+    fila = fila-1
+    columna = columna-1
+    #print(fila, columna)
+    posicion = mapa[fila,columna] 
+    if posicion == 1:
+        #if fila+1 < mapa.shape[0] and fila-1 > -1 and columna+1 < mapa.shape[1] and columna-1 > -1: 
+        mapeo[fila,columna] = mapa[fila,columna] #posicion actual
+        #if fila+1 < mapa.shape[0] and fila-1 > -1 and columna+1 < mapa.shape[1] and columna-1 > -1: 
+        mapeo[fila-1,columna] = mapa[fila-1,columna] #arriba
+        #if fila+1 < mapa.shape[0] and fila-1 > -1 and columna+1 < mapa.shape[1] and columna-1 > -1: 
+        mapeo[fila+1,columna] = mapa[fila+1,columna] #abajo
+        #if (fila+1) < mapa.shape[0] and (fila-1) > 0 and (columna+1) < mapa.shape[1] and (columna-1) > 0: 
+        mapeo[fila,columna+1] = mapa[fila,columna+1] #derecha
+        if fila+1 < mapa.shape[0] and fila-1 > 0 and columna+1 < mapa.shape[1] and columna-1 > 0: 
+            mapeo[fila,columna-1] = mapa[fila,columna-1] #izquierda
 
 def mostrarCasilla(mapa):
     valorCol = simpledialog.askinteger("Columna","Ingrese el valor de la columna deseada", parent=root) 
@@ -155,6 +193,5 @@ def cambiarCasilla(mapa):
             f.write(str(fila[i]))
         f.write("\n")    
     f.close
-    #muestraMapa()
 
 muestraMapa()
