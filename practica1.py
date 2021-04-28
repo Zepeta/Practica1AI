@@ -17,42 +17,37 @@ fila = 0
 mapeo = []
 bandera_ep = False
 
+doc = open("doc.txt","r").read()
+filas = doc.split("\n")
+row = len(filas)
+col = len(filas[0].split(","))
+lista = []
+for fila in filas:
+    aux = fila.split(",")
+    for car in aux:
+        lista.append(int(car))
+mapa = np.array(lista).reshape(row,col)
+
+ax1.xaxis.set_ticks_position('top')
+ax1.set_xticks(np.arange(1,col+1))
+ax1.set_yticks(np.arange(1,row+1))
+ax1.grid(color='k')
+
 def definirMapa():
-    f = open("doc.txt","r")
-    matriz = f.read()
-    lista = []
-    col = 0
-    row = 0
     global mapeo
     global bandera_ep
-    for car in matriz:
-        if car != ",":
-            col += 1
-        if car == "\n":
-            break
-    col = col-1
-    for car in matriz:
-        if car == "\n":
-            row +=1
-        if car != "," and car != "\n":
-            lista.append(int(car))
-    mapa = np.array(lista).reshape(row,col)
+    global ax1
     if not bandera_ep:
         mapeo = np.full((row,col),2)
         im = ax1.imshow(mapeo,cmap = ListedColormap(['k']), extent = [1,col+1,row+1,1])#'gray','w'
     else:
-        im = ax1.imshow(mapeo,cmap = ListedColormap(['gray',"w","k"]), extent = [1,col+1,row+1,1])#'gray','w'
-    im.set_data(mapeo)
-    ax1.xaxis.set_ticks_position('top')
-    ax1.set_xticks(np.arange(1,col+1))
-    ax1.set_yticks(np.arange(1,row+1))
-    
+        im = ax1.imshow(mapeo,cmap = ListedColormap(['gray',"w","k"]), extent = [1,col+1,row+1,1])#'gray','w' }
+    im = None
     return mapa
 
 def animate(i):
-    definirMapa()
-    
-ax1.grid(color='k')
+    mapa = definirMapa()
+    mapa = None
 
 def muestraMapa():
     
@@ -61,10 +56,7 @@ def muestraMapa():
 
     canvas = FigureCanvasTkAgg(fig, master=root)
     canvas.draw()
-
     canvas.get_tk_widget().pack()
-    
-    ani = animation.FuncAnimation(fig, animate, interval=1000,cache_frame_data=False) 
 
     btn_mc = tk.Button(root, #root_panel
                      text = "Mostrar valor de Casilla",
@@ -78,15 +70,19 @@ def muestraMapa():
     
     root.bind("<Key>",eventoClick)
     
+    intervalo = 1000
+    ani = animation.FuncAnimation(fig, animate, interval=intervalo,cache_frame_data=False,save_count=0) 
+
     global columna, fila
     columna, fila = establecerPosiciones()
-    
+
     root.mainloop() 
-    
+        
 
 def eventoClick(event):
     global columna
     global fila
+    global ax1
     mapa = definirMapa()    
     
     posicion_inicial = mapa[fila,columna]
@@ -129,6 +125,28 @@ def eventoClick(event):
         sys.exit()
     print(columna+1,fila+1)
     mapear(fila+1, columna+1)
+    mapa = None
+
+def mapear(fila, columna):
+    mapa = definirMapa()
+    fila = fila-1
+    columna = columna-1
+    filInic = fila
+    colInic = fila
+    posicion = mapa[fila,columna] 
+    if posicion == 1:
+        mapeo[fila,columna] = mapa[fila,columna] #actual
+        if fila+1<mapa.shape[0]:
+            mapeo[fila+1,columna] = mapa[fila+1,columna] #abajo
+        if fila-1 >=0:
+            mapeo[fila-1,columna] = mapa[fila-1,columna] #arriba
+        if columna+1 < mapa.shape[1]:
+            mapeo[fila,columna+1] = mapa[fila,columna+1] #derecha
+        if columna-1 >= 0: 
+            mapeo[fila,columna-1] = mapa[fila,columna-1] #izquierda
+    elif mapa[filInic,colInic] == 0:
+        messagebox.showerror("Error","Ingrese datos validos")
+        establecerPosiciones()
 
 def establecerPosiciones():
     mapa = definirMapa()
@@ -145,24 +163,6 @@ def establecerPosiciones():
     mapear(valorFilaInic,valorColInic)
     bandera_ep = True
     return valorColInic-1, valorFilaInic-1
-
-def mapear(fila, columna):
-    mapa = definirMapa()
-    fila = fila-1
-    columna = columna-1
-    #print(fila, columna)
-    posicion = mapa[fila,columna] 
-    if posicion == 1:
-        #if fila+1 < mapa.shape[0] and fila-1 > -1 and columna+1 < mapa.shape[1] and columna-1 > -1: 
-        mapeo[fila,columna] = mapa[fila,columna] #posicion actual
-        #if fila+1 < mapa.shape[0] and fila-1 > -1 and columna+1 < mapa.shape[1] and columna-1 > -1: 
-        mapeo[fila-1,columna] = mapa[fila-1,columna] #arriba
-        #if fila+1 < mapa.shape[0] and fila-1 > -1 and columna+1 < mapa.shape[1] and columna-1 > -1: 
-        mapeo[fila+1,columna] = mapa[fila+1,columna] #abajo
-        #if (fila+1) < mapa.shape[0] and (fila-1) > 0 and (columna+1) < mapa.shape[1] and (columna-1) > 0: 
-        mapeo[fila,columna+1] = mapa[fila,columna+1] #derecha
-        if fila+1 < mapa.shape[0] and fila-1 > 0 and columna+1 < mapa.shape[1] and columna-1 > 0: 
-            mapeo[fila,columna-1] = mapa[fila,columna-1] #izquierda
 
 def mostrarCasilla(mapa):
     valorCol = simpledialog.askinteger("Columna","Ingrese el valor de la columna deseada", parent=root) 
